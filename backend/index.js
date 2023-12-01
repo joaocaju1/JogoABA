@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const sql = require('mssql');
+const mysql = require('mysql2/promise'); // Note o '/promise'
 const cors = require('cors');
 
 const app = express();
@@ -8,6 +9,15 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+
+const mysqlConfig = {
+  host: '127.0.0.1',
+  port: 3306,
+  user: 'root',
+  password: '',
+  database: 'abagame',
+};
 
 const config = {
   user: 'CLT144398fin.paper',
@@ -20,11 +30,11 @@ const config = {
   },
 };
 
-// Middleware para estabelecer a conexão com o banco de dados antes de cada rota
+// Middleware para estabelecer a conexão com o banco de dados SQL Server antes de cada rota
 app.use(async (req, res, next) => {
   try {
-    // Conectar ao banco de dados
-    console.log('Conectando ao banco de dados...');
+    // Conectar ao banco de dados SQL Server
+    console.log('Conectando ao banco de dados SQL Server...');
     await sql.connect(config);
     console.log('Conexão bem-sucedida!');
     next(); // Passa para a próxima função de middleware ou rota
@@ -32,8 +42,8 @@ app.use(async (req, res, next) => {
     console.error('Erro no servidor:', error);
     res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
   }
-  
 });
+
 
 app.post('/api/authenticate', async (req, res) => {
   const { cpf } = req.body;
@@ -66,6 +76,40 @@ app.post('/api/authenticate', async (req, res) => {
   }
 });
 
+
+// Rota para salvar as seleções do usuário no banco de dados MySQL
+app.post('/api/saveUserSelections', async (req, res) => {
+  const { userId, selectedValues, selectedNonValues } = req.body;
+
+  try {
+    // Conectar ao banco de dados MySQL
+    const mysqlConnection = await mysql.createConnection(mysqlConfig);
+
+    // Verificar se o usuário já possui registros e decidir entre INSERT ou UPDATE
+    const [existingRows] = await mysqlConnection.query('SELECT * FROM user_selections WHERE user_id = ?', [userId]);
+
+    if (existingRows.length > 0) {
+      // Se o usuário já possui registros, faça um UPDATE
+      await mysqlConnection.query('UPDATE user_selections SET selected_values = ?, selected_non_values = ? WHERE user_id = ?', [JSON.stringify(selectedValues), JSON.stringify(selectedNonValues), userId]);
+    } else {
+      // Se o usuário não possui registros, faça um INSERT
+      await mysqlConnection.query('INSERT INTO user_selections (user_id, selected_values, selected_non_values) VALUES (?, ?, ?)', [userId, JSON.stringify(selectedValues), JSON.stringify(selectedNonValues)]);
+    }
+
+    // Envie uma resposta de sucesso
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  } finally {
+    // Fechar a conexão com o banco de dados MySQL após processar a rota
+    if (mysqlConnection) {
+      await mysqlConnection.end();
+    }
+  }
+});
+
+
 // Use middleware para analisar o corpo da solicitação
 app.use(bodyParser.json()); 
 
@@ -83,6 +127,7 @@ app.post('/api/createSession', (req, res) => {
 
   res.json(sessionData);
 });
+
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

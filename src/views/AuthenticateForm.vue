@@ -40,12 +40,29 @@ export default {
 
         this.userInfo = response.data;
         this.error = null;
+
+        // Crie uma sessão após a autenticação
+        await this.createSession(this.userInfo.RD0_CIC);
       } catch (error) {
         console.error('Erro no servidor:', error);
         this.handleAuthenticationError(error);
       }
     },
 
+    async createSession(userId) {
+      try {
+        const response = await axios.post('http://localhost:3000/api/createSession', {
+          userId: userId
+        });
+
+        // Armazene ou manipule os dados da sessão conforme necessário
+        const sessionData = response.data;
+        console.log('Sessão criada:', sessionData);
+      } catch (error) {
+        console.error('Erro ao criar a sessão:', error);
+        // Trate o erro ao criar a sessão, se necessário
+      }
+    },
     startMinigame() {
       // Redirecionar para a página do minigame
       this.$router.push({ name: 'Minigame' });
