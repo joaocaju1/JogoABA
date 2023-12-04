@@ -46,13 +46,11 @@ app.use(async (req, res, next) => {
 
 app.post('/api/authenticate', async (req, res) => {
   const { cpf } = req.body;
-  console.log(typeof cpf)
   
   try {
     // Consulta SQL para obter dados do usuário
     const result = await sql.query`SELECT RD0_NOME, RD0_CIC, RD0_FILIAL FROM RD0010 WHERE RD0_CIC = ${cpf} AND D_E_L_E_T_ = ''`;
 
-    console.log(result.recordset)
     // Verificar se o usuário foi encontrado
     if (result.recordset.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -60,9 +58,14 @@ app.post('/api/authenticate', async (req, res) => {
 
     // Retorne os campos desejados
     const userInfo = result.recordset[0];
-      // Adicione as propriedades nome e filial ao objeto userInfo
-      userInfo.nome = userInfo.RD0_NOME;
-      userInfo.filial = userInfo.RD0_FILIAL;
+    // Adicione as propriedades nome, filial e user_id ao objeto userInfo
+    userInfo.nome = userInfo.RD0_NOME;
+    userInfo.filial = userInfo.RD0_FILIAL;
+    userInfo.user_id = userInfo.user_id = result.recordset[0].seuCampoUserId;
+
+
+    // Armazene userInfo no objeto req
+    req.userInfo = userInfo;
 
     return res.json(userInfo);
     
@@ -76,37 +79,38 @@ app.post('/api/authenticate', async (req, res) => {
 });
 
 
-// Rota para salvar as seleções do usuário no banco de dados MySQL
-app.post('/api/saveUserSelections', async (req, res) => {
-  const { userId, selectedValues, selectedNonValues } = req.body;
-
+app.post('/api/storeGameSelections', async (req, res) => {
   try {
+    const { selectedValues, selectedNonValues } = req.body;
+    const { user_id } = req.userInfo; // Certifique-se de que esta informação esteja disponível no objeto req
+
+    // Certifique-se de que as seleções estejam presentes no corpo da solicitação
+    if (!selectedValues || !selectedNonValues) {
+      return res.status(400).json({ error: 'Dados de seleção ausentes na solicitação' });
+    }
+
     // Conectar ao banco de dados MySQL
-    const mysqlConnection = await mysql.createConnection(mysqlConfig);
+    const connection = await mysql.createConnection(mysqlConfig);
 
-    // Verificar se o usuário já possui registros e decidir entre INSERT ou UPDATE
-    const [existingRows] = await mysqlConnection.query('SELECT * FROM user_selections WHERE user_id = ?', [userId]);
+    // Inserir dados na tabela user_selections
+    await connection.execute(
+      'INSERT INTO user_selections (user_id, selected_values, selected_non_values) VALUES (?, ?, ?)',
+      [user_id, JSON.stringify(selectedValues), JSON.stringify(selectedNonValues)]
+    );
 
-    if (existingRows.length > 0) {
-      // Se o usuário já possui registros, faça um UPDATE
-      await mysqlConnection.query('UPDATE user_selections SET selected_non_values = ? WHERE user_id = ?', [JSON.stringify(selectedNonValues), userId]);
-    } else {
-      // Se o usuário não possui registros, faça um INSERT
-      await mysqlConnection.query('INSERT INTO user_selections (user_id, selected_non_values) VALUES (?, ?)', [userId, JSON.stringify(selectedNonValues)]);
-    }
+    // Fechar a conexão
+    await connection.end();
 
-    // Envie uma resposta de sucesso
-    res.json({ success: true });
+    // Responder com sucesso
+    return res.json({ success: true });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  } finally {
-    // Fechar a conexão com o banco de dados MySQL após processar a rota
-    if (mysqlConnection) {
-      await mysqlConnection.end();
-    }
+    console.error('Erro ao armazenar seleções no banco de dados:', error);
+    return res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
   }
 });
+
+
 
 
 // Use middleware para analisar o corpo da solicitação

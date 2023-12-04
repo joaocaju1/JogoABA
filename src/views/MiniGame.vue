@@ -8,27 +8,17 @@
       <div class="phrase-container">
         <h2>Escolha até 6 Palavras de Valores:</h2>
         <div class="phrase-list">
-          <button
-            v-for="(phrase, index) in phrases"
-            :key="index"
-            class="phrase-item"
+          <button v-for="(phrase, index) in phrases" :key="index" class="phrase-item"
             :class="{ 'highlighted-phrase': highlightedPhrase === index, 'clicked-phrase': clickedValues.includes(phrase) }"
-            @click="toggleClickedValue(phrase)"
-            :disabled="isValueButtonDisabled(phrase)"
-          >
+            @click="toggleClickedValue(phrase)" :disabled="isValueButtonDisabled(phrase)">
             {{ phrase }}
           </button>
         </div>
         <h2>Escolha até 6 Palavras que Não São Valores:</h2>
         <div class="phrase-list">
-          <button
-            v-for="(phrase, index) in nonValues"
-            :key="index"
-            class="phrase-item"
+          <button v-for="(phrase, index) in nonValues" :key="index" class="phrase-item"
             :class="{ 'highlighted-phrase': highlightedNonValue === index, 'clicked-phrase': clickedNonValues.includes(phrase) }"
-            @click="toggleClickedNonValue(phrase)"
-            :disabled="isNonValueButtonDisabled(phrase)"
-          >
+            @click="toggleClickedNonValue(phrase)" :disabled="isNonValueButtonDisabled(phrase)">
             {{ phrase }}
           </button>
         </div>
@@ -40,12 +30,14 @@
 
 <script>
 import axios from 'axios';
+
+
 export default {
-  
+
   data() {
     return {
       gameStarted: false,
-      userInfo: {},  // Defina o objeto userInfo
+     
       selectedValues: [],
       highlightedPhrase: null,
       clickedValues: [],
@@ -53,7 +45,7 @@ export default {
       highlightedNonValue: null,
       clickedNonValues: [],
       phrases: [
-      "Aprendizagem contínua",
+        "Aprendizagem contínua",
         "Atingir Objetivos",
         "Atitude Positiva",
         "Bem estar (físico, emocional, mental e espiritual)",
@@ -85,7 +77,7 @@ export default {
         "Valoriza a diversidade"
       ],
       nonValues: [
-      "Aprendizagem contínua",
+        "Aprendizagem contínua",
         "Atingir Objetivos",
         "Atitude Positiva",
         "Bem estar (físico, emocional, mental e espiritual)",
@@ -117,82 +109,55 @@ export default {
         "Valoriza a diversidade"
       ],
 
-      
+
     };
-    
+
   },
-  methods: {
+  methods:
+  {
 
     async authenticateUser() {
-    // Chame a API de autenticação
-    const response = await axios.post('http://localhost:3000/api/authenticate', { cpf: '12345678901' });
+      // Chame a API de autenticação
+      const response = await axios.post('http://localhost:3000/api/authenticate', { cpf: '12345678901' });
 
-    // Defina this.userInfo com os dados do usuário
-    this.userInfo = response.data;
+      // Defina this.userInfo com os dados do usuário
+      this.userInfo = response.data;
 
-    // Continue com a lógica do seu código, por exemplo, chamando checkAnswers
-    this.checkAnswers();
-  },
+      // Continue com a lógica do seu código, por exemplo, chamando checkAnswers
+      this.checkAnswers();
+    },
+
 
     startGame() {
       this.gameStarted = true;
     },
 
+ 
     checkAnswers: async function () {
-      // Certifique-se de que this.userInfo e this.userInfo.RD0_CIC estão definidos
-      if (!this.userInfo || !this.userInfo.RD0_CIC) {
-    console.error('Erro: this.userInfo ou this.userInfo.RD0_CIC não está definido.');
-    return;
-  }
+  try {
+    // Certifique-se de que this.userInfo e this.userInfo.RD0_CIC estão definidos
 
-      // Obtém o userId do campo RD0_CIC
-      const userId = this.userInfo.RD0_CIC;
-
-      // Validação básica para garantir que userId tenha um formato de CPF válido
-      if (!this.validateCpf(userId)) {
-        console.error('Erro: CPF inválido.');
-        return;
-      }
-      // alert("Você escolheu as seguintes frases como valores: " + this.selectedValues.join(", "));
-      // alert("Você escolheu as seguintes frases como não valores: " + this.selectedNonValues.join(", "));
-
-      this.selectedValues = [];
-      this.highlightedPhrase = null;
-      this.clickedValues = [];
-      this.selectedNonValues = [];
-      this.highlightedNonValue = null;
-      this.clickedNonValues = [];
-      this.gameStarted = false;
-
-      // Agora, verifique se userId é válido antes de continuar
-      if (!userId) {
-        console.error('Erro: this.userInfo ou this.userInfo.RD0_CIC não está definido.');
-        return;
-      }
-
-try {
-    // Enviar informações selecionadas para o backend
-    const response = await axios.post('http://localhost:3000/api/saveUserSelections', {
-      userId: userId,
+    // Chamada à API para armazenar as seleções no banco de dados
+    await axios.post('http://localhost:3000/api/storeGameSelections', {
       selectedValues: this.selectedValues,
       selectedNonValues: this.selectedNonValues,
     });
 
-      console.log(this.userInfo.RD0_CIC);
+    // Limpar seleções e redefinir o estado do jogo
+    this.selectedValues = [];
+    this.highlightedPhrase = null;
+    this.clickedValues = [];
+    this.selectedNonValues = [];
+    this.highlightedNonValue = null;
+    this.clickedNonValues = [];
+    this.gameStarted = false;
 
-
-      // Verificar a resposta do servidor
-      if (response.data.success) {
-        alert('Informações salvas com sucesso!');
-      } else {
-        throw new Error('Falha ao salvar informações no servidor');
-      }
-    } catch (error) {
-    console.error('Erro ao salvar informações:', error);
-    // Trate o erro ao salvar informações, se necessário
-    alert('Erro ao salvar informações. Verifique o console para mais detalhes.');
+  } catch (error) {
+    console.error('Erro ao chamar a rota de armazenamento no backend:', error);
+    // Lógica de tratamento de erro, se necessário
   }
-    },
+},
+
 
     highlightPhrase(index) {
       this.highlightedPhrase = index;
@@ -236,7 +201,7 @@ try {
         this.selectedValues = this.selectedValues.filter((value) => value !== phrase);
       }
     },
-        isValueButtonDisabled(phrase) {
+    isValueButtonDisabled(phrase) {
       return (
         this.selectedValues.length >= 6 ||
         (this.selectedValues.length >= 3 && !this.selectedValues.includes(phrase)) ||
@@ -321,7 +286,7 @@ try {
   color: #066399;
 }
 
-#botao{
+#botao {
   margin: 10px;
   width: 18%;
   box-sizing: border-box;
@@ -333,9 +298,9 @@ try {
   padding: 10px;
 }
 
-#botao:hover{
+#botao:hover {
   background-color: rgb(9, 238, 28);
 }
-/* Adicione estilos conforme necessário */
 
+/* Adicione estilos conforme necessário */
 </style>
