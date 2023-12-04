@@ -37,7 +37,7 @@ export default {
   data() {
     return {
       gameStarted: false,
-     
+
       selectedValues: [],
       highlightedPhrase: null,
       clickedValues: [],
@@ -134,7 +134,10 @@ export default {
 
  
     checkAnswers: async function () {
+      console.log(this.selectedValues)
+    console.log(this.selectedNonValues)
   try {
+    
     // Certifique-se de que this.userInfo e this.userInfo.RD0_CIC estão definidos
 
     // Chamada à API para armazenar as seleções no banco de dados
@@ -142,7 +145,8 @@ export default {
       selectedValues: this.selectedValues,
       selectedNonValues: this.selectedNonValues,
     });
-
+    console.log(this.selectedValues)
+    console.log(this.selectedNonValues)
     // Limpar seleções e redefinir o estado do jogo
     this.selectedValues = [];
     this.highlightedPhrase = null;
@@ -168,18 +172,20 @@ export default {
       }
     },
     toggleClickedValue(phrase) {
-      if (this.clickedValues.length + this.clickedNonValues.length >= 12 || (this.clickedValues.length >= 6 && !this.clickedValues.includes(phrase))) {
-        return;
-      }
+    if (this.clickedValues.length + this.clickedNonValues.length >= 12 || this.clickedValues.length >= 6) {
+      return;
+    }
 
-      if (this.clickedValues.includes(phrase)) {
-        this.clickedValues = this.clickedValues.filter((clickedValue) => clickedValue !== phrase);
-      } else {
-        this.clickedValues.push(phrase);
-        // Remova a frase selecionada do outro array
-        this.selectedNonValues = this.selectedNonValues.filter((nonValue) => nonValue !== phrase);
-      }
-    },
+    if (this.clickedValues.includes(phrase)) {
+      this.clickedValues = this.clickedValues.filter((clickedValue) => clickedValue !== phrase);
+    } else {
+      this.clickedValues.push(phrase);
+      // Remova a frase selecionada do outro array
+      this.clickedNonValues = this.clickedNonValues.filter((nonValue) => nonValue !== phrase);
+      // Adicione a frase selecionada ao array de valores
+      this.selectedValues.push(phrase);
+    }
+  },
     highlightNonValue(index) {
       this.highlightedNonValue = index;
     },
@@ -188,23 +194,26 @@ export default {
         this.highlightedNonValue = null;
       }
     },
-    toggleClickedNonValue(phrase) {
-      if (this.clickedValues.length + this.clickedNonValues.length >= 12 || (this.clickedNonValues.length >= 6 && !this.clickedNonValues.includes(phrase))) {
-        return;
-      }
+   
+  toggleClickedNonValue(phrase) {
+    if (this.clickedValues.length + this.clickedNonValues.length >= 12 || this.clickedNonValues.length >= 6) {
+      return;
+    }
 
-      if (this.clickedNonValues.includes(phrase)) {
-        this.clickedNonValues = this.clickedNonValues.filter((clickedNonValue) => clickedNonValue !== phrase);
-      } else {
-        this.clickedNonValues.push(phrase);
-        // Remova a frase selecionada do outro array
-        this.selectedValues = this.selectedValues.filter((value) => value !== phrase);
-      }
-    },
+    if (this.clickedNonValues.includes(phrase)) {
+      this.clickedNonValues = this.clickedNonValues.filter((clickedNonValue) => clickedNonValue !== phrase);
+    } else {
+      this.clickedNonValues.push(phrase);
+      // Remova a frase selecionada do outro array
+      this.clickedValues = this.clickedValues.filter((value) => value !== phrase);
+      // Adicione a frase selecionada ao array de não valores
+      this.selectedNonValues.push(phrase);
+    }
+  },
     isValueButtonDisabled(phrase) {
       return (
         this.selectedValues.length >= 6 ||
-        (this.selectedValues.length >= 3 && !this.selectedValues.includes(phrase)) ||
+        (this.selectedValues.length >= 12 && !this.selectedValues.includes(phrase)) ||
         this.selectedNonValues.includes(phrase) ||
         this.clickedNonValues.includes(phrase)
       );
@@ -213,7 +222,7 @@ export default {
     isNonValueButtonDisabled(phrase) {
       return (
         this.selectedNonValues.length >= 6 ||
-        (this.selectedNonValues.length >= 3 && !this.selectedNonValues.includes(phrase)) ||
+        (this.selectedNonValues.length >= 12 && !this.selectedNonValues.includes(phrase)) ||
         this.selectedValues.includes(phrase) ||
         this.clickedValues.includes(phrase)
       );

@@ -46,7 +46,6 @@ app.use(async (req, res, next) => {
 
 app.post('/api/authenticate', async (req, res) => {
   const { cpf } = req.body;
-  
   try {
     // Consulta SQL para obter dados do usuário
     const result = await sql.query`SELECT RD0_NOME, RD0_CIC, RD0_FILIAL FROM RD0010 WHERE RD0_CIC = ${cpf} AND D_E_L_E_T_ = ''`;
@@ -80,9 +79,11 @@ app.post('/api/authenticate', async (req, res) => {
 
 
 app.post('/api/storeGameSelections', async (req, res) => {
+  console.log(req.body)
   try {
     const { selectedValues, selectedNonValues } = req.body;
     const { user_id } = req.userInfo; // Certifique-se de que esta informação esteja disponível no objeto req
+   
 
     // Certifique-se de que as seleções estejam presentes no corpo da solicitação
     if (!selectedValues || !selectedNonValues) {
