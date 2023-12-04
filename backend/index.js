@@ -10,7 +10,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-
 const mysqlConfig = {
   host: '127.0.0.1',
   port: 3306,
@@ -90,10 +89,10 @@ app.post('/api/saveUserSelections', async (req, res) => {
 
     if (existingRows.length > 0) {
       // Se o usuário já possui registros, faça um UPDATE
-      await mysqlConnection.query('UPDATE user_selections SET selected_values = ?, selected_non_values = ? WHERE user_id = ?', [JSON.stringify(selectedValues), JSON.stringify(selectedNonValues), userId]);
+      await mysqlConnection.query('UPDATE user_selections SET selected_non_values = ? WHERE user_id = ?', [JSON.stringify(selectedNonValues), userId]);
     } else {
       // Se o usuário não possui registros, faça um INSERT
-      await mysqlConnection.query('INSERT INTO user_selections (user_id, selected_values, selected_non_values) VALUES (?, ?, ?)', [userId, JSON.stringify(selectedValues), JSON.stringify(selectedNonValues)]);
+      await mysqlConnection.query('INSERT INTO user_selections (user_id, selected_non_values) VALUES (?, ?)', [userId, JSON.stringify(selectedNonValues)]);
     }
 
     // Envie uma resposta de sucesso

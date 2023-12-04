@@ -45,6 +45,7 @@ export default {
   data() {
     return {
       gameStarted: false,
+      userInfo: {},  // Defina o objeto userInfo
       selectedValues: [],
       highlightedPhrase: null,
       clickedValues: [],
@@ -115,19 +116,43 @@ export default {
         "Transparência",
         "Valoriza a diversidade"
       ],
+
+      
     };
     
   },
   methods: {
+
+    async authenticateUser() {
+    // Chame a API de autenticação
+    const response = await axios.post('http://localhost:3000/api/authenticate', { cpf: '12345678901' });
+
+    // Defina this.userInfo com os dados do usuário
+    this.userInfo = response.data;
+
+    // Continue com a lógica do seu código, por exemplo, chamando checkAnswers
+    this.checkAnswers();
+  },
+
     startGame() {
       this.gameStarted = true;
     },
+
     checkAnswers: async function () {
-      if (this.selectedValues.length + this.selectedNonValues.length > 12) {
-        alert("Escolha no máximo 12 frases no total.");
+      // Certifique-se de que this.userInfo e this.userInfo.RD0_CIC estão definidos
+      if (!this.userInfo || !this.userInfo.RD0_CIC) {
+    console.error('Erro: this.userInfo ou this.userInfo.RD0_CIC não está definido.');
+    return;
+  }
+
+      // Obtém o userId do campo RD0_CIC
+      const userId = this.userInfo.RD0_CIC;
+
+      // Validação básica para garantir que userId tenha um formato de CPF válido
+      if (!this.validateCpf(userId)) {
+        console.error('Erro: CPF inválido.');
         return;
       }
-
       // alert("Você escolheu as seguintes frases como valores: " + this.selectedValues.join(", "));
       // alert("Você escolheu as seguintes frases como não valores: " + this.selectedNonValues.join(", "));
 
@@ -139,19 +164,20 @@ export default {
       this.clickedNonValues = [];
       this.gameStarted = false;
 
-      
-      if (!this.userInfo) {
-    console.error('Erro: this.userInfo não está definido.');
-    return;
-  }
+      // Agora, verifique se userId é válido antes de continuar
+      if (!userId) {
+        console.error('Erro: this.userInfo ou this.userInfo.RD0_CIC não está definido.');
+        return;
+      }
 
-      try {
-      // Enviar informações selecionadas para o backend
-      const response = await axios.post('http://localhost:3000/api/saveUserSelections', {
-        userId: this.userInfo.RD0_CIC,
-        selectedValues: this.selectedValues,
-        selectedNonValues: this.selectedNonValues,
-      });
+try {
+    // Enviar informações selecionadas para o backend
+    const response = await axios.post('http://localhost:3000/api/saveUserSelections', {
+      userId: userId,
+      selectedValues: this.selectedValues,
+      selectedNonValues: this.selectedNonValues,
+    });
+
       console.log(this.userInfo.RD0_CIC);
 
 
@@ -162,11 +188,12 @@ export default {
         throw new Error('Falha ao salvar informações no servidor');
       }
     } catch (error) {
-      console.error('Erro ao salvar informações:', error);
-      // Trate o erro ao salvar informações, se necessário
-      alert('Erro ao salvar informações. Verifique o console para mais detalhes.');
-    }
-  },
+    console.error('Erro ao salvar informações:', error);
+    // Trate o erro ao salvar informações, se necessário
+    alert('Erro ao salvar informações. Verifique o console para mais detalhes.');
+  }
+    },
+
     highlightPhrase(index) {
       this.highlightedPhrase = index;
     },

@@ -15,7 +15,8 @@
     "mssql": "^10.0.1",
     "mysql2": "^3.6.5",
     "vue": "^3.2.13",
-    "vue-router": "^4.0.13"
+    "vue-router": "^4.0.13",
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
