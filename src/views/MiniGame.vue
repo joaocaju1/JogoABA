@@ -172,15 +172,17 @@ export default {
       }
     },
     toggleClickedValue(phrase) {
-    if (this.clickedValues.length + this.clickedNonValues.length >= 12 || this.clickedValues.length >= 6) {
+    if (this.clickedValues.length + this.clickedNonValues.length >= 12) {
       return;
     }
 
     if (this.clickedValues.includes(phrase)) {
       this.clickedValues = this.clickedValues.filter((clickedValue) => clickedValue !== phrase);
+      // Remova a frase desselecionada do array de valores
+      this.selectedValues = this.selectedValues.filter((value) => value !== phrase);
     } else {
       this.clickedValues.push(phrase);
-      // Remova a frase selecionada do outro array
+      // Remova a frase selecionada do array de não valores se já estiver lá
       this.clickedNonValues = this.clickedNonValues.filter((nonValue) => nonValue !== phrase);
       // Adicione a frase selecionada ao array de valores
       this.selectedValues.push(phrase);
@@ -195,21 +197,24 @@ export default {
       }
     },
    
-  toggleClickedNonValue(phrase) {
-    if (this.clickedValues.length + this.clickedNonValues.length >= 12 || this.clickedNonValues.length >= 6) {
+    toggleClickedNonValue(phrase) {
+    if (this.clickedValues.length + this.clickedNonValues.length >= 12) {
       return;
     }
 
     if (this.clickedNonValues.includes(phrase)) {
       this.clickedNonValues = this.clickedNonValues.filter((clickedNonValue) => clickedNonValue !== phrase);
+      // Remova a frase desselecionada do array de não valores
+      this.selectedNonValues = this.selectedNonValues.filter((nonValue) => nonValue !== phrase);
     } else {
       this.clickedNonValues.push(phrase);
-      // Remova a frase selecionada do outro array
+      // Remova a frase selecionada do array de valores se já estiver lá
       this.clickedValues = this.clickedValues.filter((value) => value !== phrase);
       // Adicione a frase selecionada ao array de não valores
       this.selectedNonValues.push(phrase);
     }
   },
+
     isValueButtonDisabled(phrase) {
       return (
         this.selectedValues.length >= 6 ||
