@@ -18,6 +18,8 @@ const routes = [
     name: 'Minigame',
     component: Minigame,
   },
+
+  
   // ... outras rotas, se houver
 ];
 

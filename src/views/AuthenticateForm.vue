@@ -33,36 +33,57 @@ export default {
 
   methods: {
     async authenticate() {
-      try {
-        const response = await axios.post('http://localhost:3000/api/authenticate', {
-          cpf: this.cpf
-        });
+  try {
+    const response = await axios.post('http://localhost:3000/api/authenticate', {
+      cpf: this.cpf
+    });
 
-        this.userInfo = response.data;
-        this.error = null;
+    // Verifique se a resposta contém os dados esperados
+    if (response.data && response.data.RD0_CIC) {
+      console.log(response.data)
+      // Atribua os dados do usuário a this.userInfo
+      this.userInfo = response.data;
+      
+      // Crie uma sessão após a autenticação
+      await this.createSession(this.userInfo.RD0_CIC);
 
-        // Crie uma sessão após a autenticação
-        await this.createSession(this.userInfo.RD0_CIC);
-      } catch (error) {
-        console.error('Erro no servidor:', error);
-        this.handleAuthenticationError(error);
-      }
-    },
+      // Após a autenticação bem-sucedida, redirecione para a rota Minigame
+      this.$router.push({ name: 'Minigame' });
+    } else {
+      console.error('Dados do usuário não encontrados na resposta da autenticação.');
+      // Trate o erro conforme necessário
+    }
 
-    async createSession(userId) {
-      try {
-        const response = await axios.post('http://localhost:3000/api/createSession', {
-          userId: userId
-        });
+  } catch (error) {
+    console.error('Erro no servidor:', error);
+    this.handleAuthenticationError(error);
+  }
+},
 
-        // Armazene ou manipule os dados da sessão conforme necessário
-        const sessionData = response.data;
-        console.log('Sessão criada:', sessionData);
-      } catch (error) {
-        console.error('Erro ao criar a sessão:', error);
-        // Trate o erro ao criar a sessão, se necessário
-      }
-    },
+
+
+async createSession(userId) {
+  try {
+    // Adicione a barra antes de "api/createSession"
+    const response = await axios.post('http://localhost:3000/api/createSession', {
+  userId: userId
+});
+
+    // Verifique se a resposta contém os dados esperados
+    if (response.data && response.data.sessionData) {
+      // Armazene ou manipule os dados da sessão conforme necessário
+      const sessionData = response.data.sessionData;
+      console.log('Sessão criada:', sessionData);
+    } else {
+      console.error('Dados da sessão não encontrados na resposta da criação.');
+      // Trate o erro conforme necessário
+    }
+  } catch (error) {
+    console.error('Erro ao criar a sessão:', error);
+    // Trate o erro ao criar a sessão, se necessário
+  }
+},
+
     startMinigame() {
       // Redirecionar para a página do minigame
       this.$router.push({ name: 'Minigame' });

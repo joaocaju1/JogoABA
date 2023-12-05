@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session')
 const bodyParser = require('body-parser');
 const sql = require('mssql');
 const mysql = require('mysql2/promise'); // Note o '/promise'
@@ -43,9 +44,15 @@ app.use(async (req, res, next) => {
   }
 });
 
+app.use(session({
+  secret: 'Your_Secret_Key',
+  resave: true,
+  saveUninitialized: true
+}));
 
 app.post('/api/authenticate', async (req, res) => {
   const { cpf } = req.body;
+  console.log("FOI NO AUTENTICATE",req.body)
   try {
     // Consulta SQL para obter dados do usuário
     const result = await sql.query`SELECT RD0_NOME, RD0_CIC, RD0_FILIAL FROM RD0010 WHERE RD0_CIC = ${cpf} AND D_E_L_E_T_ = ''`;
@@ -57,17 +64,28 @@ app.post('/api/authenticate', async (req, res) => {
 
     // Retorne os campos desejados
     const userInfo = result.recordset[0];
+
     // Adicione as propriedades nome, filial e user_id ao objeto userInfo
     userInfo.nome = userInfo.RD0_NOME;
     userInfo.filial = userInfo.RD0_FILIAL;
-    userInfo.user_id = userInfo.user_id = result.recordset[0].seuCampoUserId;
-
-
+    userInfo.user_id = userInfo.RD0_CIC; // Ajuste para o nome correto do campo de usuário
     // Armazene userInfo no objeto req
     req.userInfo = userInfo;
+    // console.log(req.userInfo)
+
+    // Verifique se o UserID está presente na solicitação
+    if (!req.body.cpf) {
+      return res.status(400).json({ error: 'O UserID não foi especificado' });
+    }
+
+    // Verifique se o UserID está no formato correto
+    const regex = /^[a-zA-Z0-9]{1,255}$/;
+    if (!regex.test(req.body.cpf)) {
+      return res.status(400).json({ error: 'O UserID está no formato incorreto' });
+    }
 
     return res.json(userInfo);
-    
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -79,11 +97,17 @@ app.post('/api/authenticate', async (req, res) => {
 
 
 app.post('/api/storeGameSelections', async (req, res) => {
-  console.log(req.body)
+  console.log("FOI 1",req.body);
+
   try {
     const { selectedValues, selectedNonValues } = req.body;
-    const { user_id } = req.userInfo; // Certifique-se de que esta informação esteja disponível no objeto req
-   
+
+    // Certifique-se de que req.userInfo está definido e tem a propriedade user_id
+    if (!req.userInfo || !req.userInfo.user_id) {
+      return res.status(400).json({ error: 'ID do usuário ausente na solicitação' });
+    }
+
+    const user_id = req.session.name; // Use req.session.name como o identificador do usuário
 
     // Certifique-se de que as seleções estejam presentes no corpo da solicitação
     if (!selectedValues || !selectedNonValues) {
@@ -103,7 +127,8 @@ app.post('/api/storeGameSelections', async (req, res) => {
     await connection.end();
 
     // Responder com sucesso
-    return res.json({ success: true });
+    const successMessage = 'Dados inseridos no banco com sucesso!';
+    return res.json({ success: true, message: successMessage });
 
   } catch (error) {
     console.error('Erro ao armazenar seleções no banco de dados:', error);
@@ -111,26 +136,50 @@ app.post('/api/storeGameSelections', async (req, res) => {
   }
 });
 
-
-
-
 // Use middleware para analisar o corpo da solicitação
 app.use(bodyParser.json()); 
 
 // Rota para criar uma sessão (exemplo)
-app.post('/api/createSession', (req, res) => {
-  // Lógica para criar uma sessão (pode depender da sua aplicação)
-  const userId = req.body.userId;
+// app.post('/api/createSession', (req, res) => {
+//   // Lógica para criar uma sessão (pode depender da sua aplicação)
+//   const userId = req.body.userId;
 
-  // Exemplo: Crie uma sessão e envie uma resposta
-  const sessionData = {
-    sessionId: 'sua_sessao_gerada',
-    userId: userId,
-    // Outros dados de sessão
-  };
+//   // req.session.key = value
+//   req.session.name = userId
+//   return res.send("Session Set")
+//   // Exemplo: Crie uma sessão e envie uma resposta
+//   const sessionData = {
+//     sessionId: 'sua_sessao_gerada',
+//     userId: userId,
+//     // Outros dados de sessão
+//   };
 
-  res.json(sessionData);
+//   res.json(sessionData);
+// });
+
+
+app.post('/api/createSession', function(req, res){
+  const userId = req.body.userId;  
+  console.log('Valor de userId recebido:', userId);
+  req.session.name = userId;
+  console.log('Valor de req.session.name definido:', req.session.name);
+  return res.send("Session Set");
 });
+
+ 
+app.get("/session", function(req, res){
+  var name = req.session.name
+  return res.send(name)
+});
+
+// app.post('/api/s', function(req, res){
+//   const userId = req.body.cpf;  // corrigido de userId para cpf
+//   console.log('Valor de userId recebido:', userId);
+//   req.session.name = userId;
+//   console.log('Valor de req.session.name definido:', req.session.name);
+//   return res.send("Session Set");
+// });
+
 
 
 app.listen(PORT, () => {

@@ -22,8 +22,7 @@
             {{ phrase }}
           </button>
         </div>
-        <button id="botao" @click="checkAnswers">Verificar Respostas</button>
-
+        <button id="botao" @click="checkAnswers(this.userInfo)">Verificar Respostas</button>
       </div>
     </template>
   </div>
@@ -38,16 +37,13 @@ export default {
   data() {
     return {
       gameStarted: false,
+
       selectedValues: [],
       highlightedPhrase: null,
       clickedValues: [],
       selectedNonValues: [],
       highlightedNonValue: null,
       clickedNonValues: [],
-      cpf: '',
-      userInfo: null,
-      authenticatedUserInfo: null,
-      error: null,
       phrases: [
         "Aprendizagem contínua",
         "Atingir Objetivos",
@@ -120,65 +116,59 @@ export default {
   methods:
   {
 
-    methods: {
+    async authenticateUser() {
+  try {
+    const response = await axios.post('http://localhost:3000/api/authenticate', { cpf: '12345678901' });
 
-      async authenticateUser() {
-      try {
-        const response = await axios.post('http://localhost:3000/api/authenticate', { cpf: '12345678901' });
-        this.userInfo = response.data;
+    // Defina this.userInfo com os dados do usuário
+    this.userInfo = response.data;
+    
+    // Continue com a lógica do seu código, por exemplo, chamando checkAnswers
+    this.checkAnswers();
 
-        // Continue com a lógica do seu código, por exemplo, chamando checkAnswers
-        this.checkAnswers();
+    // Agora, this.userInfo.user_id conterá o CPF do usuário
 
-      } catch (error) {
-        console.error('Erro na requisição:', error);
-        // Lógica de tratamento de erro, se necessário
-      }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    // Lógica de tratamento de erro, se necessário
+  }
+},
+    startGame() {
+      this.gameStarted = true;
     },
 
-    async checkAnswers() {
-      try {
-        // Verificar se userInfo está definido
-        if (!this.userInfo || !this.userInfo.user_id) {
-          console.error('Erro: userInfo ou user_id não estão definidos.');
-          return; // Sair da função se não estiver definido
-        }
+ 
+    checkAnswers: async function () {
+    
+    //console.log('Selected Non Values:', );
 
-        // Atribuir userInfo a authenticatedUserInfo
-        this.authenticatedUserInfo = this.userInfo;
+  try {
+    // console.log('Selected Values:', info);
+    // console.log(this.userInfo)
+    // // Verificar se userInfo está definido
+    if (!this.userInfo || !this.userInfo.RD0_CIC) {
+      // console.log(this.userInfo)
+      // console.log(this.userInfo.RD0_CIC)
 
-        // Continue com a lógica do checkAnswers usando this.authenticatedUserInfo
-
-        // Chamada à API para armazenar as seleções no banco de dados
-        const response = await axios.post('http://localhost:3000/api/storeGameSelections', {
-          user_id: this.authenticatedUserInfo.user_id,
-          selectedValues: this.selectedValues,
-          selectedNonValues: this.selectedNonValues,
-        });
-
-        console.log('API Response:', response.data);
-
-        // Limpar seleções e redefinir o estado do jogo
-        this.selectedValues = [];
-        this.highlightedPhrase = null;
-        this.clickedValues = [];
-        this.selectedNonValues = [];
-        this.highlightedNonValue = null;
-        this.clickedNonValues = [];
-        this.gameStarted = false;
-
-      } catch (error) {
-        console.error('Erro ao chamar a rota de armazenamento no backend:', error);
-        // Lógica de tratamento de erro, se necessário
-      }
+      console.error('Erro: userInfo ou RD0_CIC não estão definidos.');
+      return; // Sair da função se não estiver definido
     }
-  },
 
-  startGame() {
-  console.log('Botão "Começar Jogo" clicado');
-  this.gameStarted = true;
+    // Chamada à API para armazenar as seleções no banco de dados
+    const response = await axios.post('http://localhost:3000/api/storeGameSelections', {
+      selectedValues: this.selectedValues,
+      selectedNonValues: this.selectedNonValues,
+      userId: this.userInfo.RD0_CIC, // Certifique-se de usar o nome correto do campo UserID
+    });
+    console.log('API Response:', response.data);
+    console.log(this.selectedValues);
+    console.log(this.selectedNonValues);
+    
+  } catch (error) {
+    console.error('Erro ao chamar a rota de armazenamento no backend:', error);
+    // Lógica de tratamento de erro, se necessário
+  }
 },
-
 
     highlightPhrase(index) {
       this.highlightedPhrase = index;
